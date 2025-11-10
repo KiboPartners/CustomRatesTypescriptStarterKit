@@ -1,6 +1,7 @@
 import { ShippingItemRate } from "@kibocommerce/rest-sdk/clients/ShippingStorefront/models/ShippingItemRate";
 import { ActionId, RatesContext, createArcFunction } from "./arcTypes/index";
 import { exampleConfig, platformApplicationsInstallImplementation } from "./platformInstall";
+import { CarrierRatesResponse } from "@kibocommerce/rest-sdk/clients/ShippingStorefront/models/CarrierRatesResponse";
 
 
 const requestRatesBefore = createArcFunction(
@@ -8,40 +9,14 @@ const requestRatesBefore = createArcFunction(
   function (context: RatesContext, callback: (errorMessage?: string) => void) {
     console.log("http.commerce.catalog.storefront.shipping.requestRates.before")
     const config = context.configuration
-
-    if (config.rateCode == null || config.rateName == null || config.carrierId == null) {
-      // Something in the config isn't correct, pass through to the default rates
-      console.error("Configuration missing values, custom rates cannot run")
-      callback()
-      return
-    }
-
+  
+    console.log(JSON.stringify(context.request.body))
     const itemRates: Array<ShippingItemRate> = (context.request.body.items || []).map(item => {
-      for (const group of config.shippingGroups) {
-        for (const productSummaries of item.productSummaries || []) {
-          if (productSummaries.productCode && group.productCodes?.includes(productSummaries.productCode)) {
-            return {
-              itemId: item.itemId,
-              quantity: item.quantity,
-              amount: group.shippingPerItem * (item.quantity || 1)
-            }
-          }
-
-          if (productSummaries.productType && group.productTypes?.includes(productSummaries.productType)) {
-            return {
-              itemId: item.itemId,
-              quantity: item.quantity,
-              amount: group.shippingPerItem * (item.quantity || 1)
-            }
-          }
-        }
-      }
-
       // Fallthrough, if in none of the groups, free shipping
       return {
         itemId: item.itemId,
         quantity: item.quantity,
-        amount: 0
+        amount: 5
       }
     })
 
@@ -51,20 +26,20 @@ const requestRatesBefore = createArcFunction(
       total += rate.amount || 0
     }
 
-
     // Return the rates response
     context.response.body = {
       resolvedShippingZoneCode: "",
       shippingZoneCodes: [],
       rates: [
         {
-          carrierId: config.carrierId,
+          carrierId: "Delivery",
+          fulfillmentMethod: "Delivery",
           shippingRates: [
             {
-              code: config.rateCode,
+              code: "default",
               content: {
                 localeCode: "en-US",
-                name: config.rateName
+                name: "Delivery"
               },
               amount: total,
               shippingItemRates: itemRates,
@@ -72,8 +47,9 @@ const requestRatesBefore = createArcFunction(
               messages: []
             }
           ]
-        }]
+        } as CarrierRatesResponse & {fulfillmentMethod: string}]
     }
+    console.log(JSON.stringify(context.response.body))
 
     callback();
   }

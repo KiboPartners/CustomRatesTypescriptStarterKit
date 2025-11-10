@@ -14,7 +14,7 @@
     "grunt-contrib-jshint": "^3.2.0",
     "grunt-contrib-watch": "^1.1.0",
     "grunt-eslint": "^24.0.0",
-    "grunt-mozu-appdev-sync": "^2.4.2",
+    "grunt-mozu-appdev-sync": "^2.4.4",
     "load-grunt-tasks": "^5.1.0",
     "mozu-action-helpers": "^0.5.6",
     "mozu-action-simulator": "^1.6.3",
