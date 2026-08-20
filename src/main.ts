@@ -1,11 +1,11 @@
 import { ShippingItemRate } from "@kibocommerce/rest-sdk/clients/ShippingStorefront/models/ShippingItemRate";
 import { ActionId, RatesContext, createArcFunction } from "./arcTypes/index";
 import { exampleConfig, platformApplicationsInstallImplementation } from "./platformInstall";
-
+import { getConfig } from "./configurationManager";
 
 const requestRatesBefore = createArcFunction(
   ActionId["http.commerce.catalog.storefront.shipping.requestRates.before"],
-  function (context: RatesContext, callback: (errorMessage?: string) => void) {
+  async function (context: RatesContext, callback: (errorMessage?: string) => void) {
     console.log("http.commerce.catalog.storefront.shipping.requestRates.before")
     const config = context.configuration
 
@@ -41,7 +41,7 @@ const requestRatesBefore = createArcFunction(
       return {
         itemId: item.itemId,
         quantity: item.quantity,
-        amount: 0
+        amount:0
       }
     })
 
@@ -51,6 +51,15 @@ const requestRatesBefore = createArcFunction(
       total += rate.amount || 0
     }
 
+    // Apply percentage fee from entity config
+    let percentageFee = 0;
+    try {
+      const extConfig = await getConfig(context as any);
+      percentageFee = extConfig.percentageFee || 0;
+    } catch {
+      // config unavailable — proceed with no fee
+    }
+    total = parseFloat((total * (1 + percentageFee / 100)).toFixed(2));
 
     // Return the rates response
     context.response.body = {
